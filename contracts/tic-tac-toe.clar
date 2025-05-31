@@ -1,7 +1,7 @@
-;; to have a track of game in the platform.
+;; to have atrack of the game
 (define-data-var latest-game-id uint u0)
 
-(define-map game uint {
+(define-map games uint {
     player-one: principal,
     player-two: (optional principal),
     is-player-one-turn: bool,
@@ -34,15 +34,15 @@
 ;; Creading a new game:
 (define-public (create-game (bet-amount uint) (move-index uint) (move uint))
     (let (
-        ;; Get the Game ID to use for creation of this new game
+        
         (game-id (var-get latest-game-id)) ;; 0
-        ;; The initial starting board for the game with all cells empty
+        
         (starting-board (list u0 u0 u0 u0 u0 u0 u0 u0 u0))
-        ;; Updated board with the starting move played by the game creator (X)
+        
         (game-board (unwrap! (replace-at? starting-board move-index move) (err ERR_INVALID_MOVE)))
-        ;; Create the game data tuple (player one address, bet amount, game board, and mark next turn to be player two's turn)
+        
         (game-data {
-            player-one: contract-caller, ;; here contract-collar is a global constant
+            player-one: contract-caller,
             player-two: none,
             is-player-one-turn: false,
             bet-amount: bet-amount,
@@ -51,23 +51,22 @@
         })
     )
 
-    ;; Ensure that user has put up a bet amount greater than the minimum
-    (asserts! (> bet-amount u0) (err ERR_MIN_BET_AMOUNT)) ;; if true then move to next line , else will return the erro-code
-    ;; Ensure that the move being played is an `X`, not an `O`
+    (asserts! (> bet-amount u0) (err ERR_MIN_BET_AMOUNT)) 
+    
     (asserts! (is-eq move u1) (err ERR_INVALID_MOVE))
-    ;; Ensure that the move meets validity requirements
+    
     (asserts! (validate-move starting-board move-index move) (err ERR_INVALID_MOVE))
 
-    ;; Transfer the bet amount STX from user to this contract
-    (try! (stx-transfer? bet-amount contract-caller THIS_CONTRACT)) ;; uses try! to handle potential failure.
-    ;; Update the games map with the new game data
+   
+    (try! (stx-transfer? bet-amount contract-caller THIS_CONTRACT)) 
+    
     (map-set games game-id game-data)
-    ;; Increment the Game ID counter
+    
     (var-set latest-game-id (+ game-id u1))
 
-    ;; Log the creation of the new game
+    
     (print { action: "create-game", data: game-data})
-    ;; Return the Game ID of the new game
+    
     (ok game-id)
 ))
 
